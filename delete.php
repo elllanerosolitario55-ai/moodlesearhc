@@ -55,37 +55,79 @@ try {
     foreach ($question_ids as $questionid) {
         try {
             // Verify question exists
-            $question = $DB->get_record('question', array('id' => $questionid), 'id, name');
+            $question = $DB->get_record('question', array('id' => $questionid), 'id, name, qtype');
 
             if (!$question) {
                 $errors[] = "Pregunta ID $questionid no encontrada";
                 continue;
             }
 
-            // 1. Delete from quiz_slots (removes question from quizzes)
-            $DB->delete_records('quiz_slots', array('questionid' => $questionid));
+            // Lista completa de tablas relacionadas con preguntas
+            $tables_to_clean = array(
+                // Referencias en quizzes
+                array('table' => 'quiz_slots', 'field' => 'questionid'),
 
-            // 2. Delete answers
-            $DB->delete_records('question_answers', array('question' => $questionid));
+                // Respuestas y feedback
+                array('table' => 'question_answers', 'field' => 'question'),
+                array('table' => 'question_hints', 'field' => 'questionid'),
 
-            // 3. Delete hints
-            $DB->delete_records('question_hints', array('questionid' => $questionid));
+                // Tipos de preguntas estándar
+                array('table' => 'question_multichoice', 'field' => 'questionid'),
+                array('table' => 'question_truefalse', 'field' => 'question'),
+                array('table' => 'question_shortanswer', 'field' => 'question'),
+                array('table' => 'question_calculated', 'field' => 'question'),
+                array('table' => 'question_match', 'field' => 'question'),
+                array('table' => 'question_match_sub', 'field' => 'questionid'),
+                array('table' => 'question_numerical', 'field' => 'question'),
+                array('table' => 'question_essay', 'field' => 'question'),
 
-            // 4. Delete question type-specific data
-            $DB->delete_records('question_multichoice', array('questionid' => $questionid));
-            $DB->delete_records('question_truefalse', array('question' => $questionid));
-            $DB->delete_records('question_shortanswer', array('question' => $questionid));
-            $DB->delete_records('question_calculated', array('question' => $questionid));
-            $DB->delete_records('question_match', array('question' => $questionid));
-            $DB->delete_records('question_match_sub', array('questionid' => $questionid));
-            $DB->delete_records('question_numerical', array('question' => $questionid));
-            $DB->delete_records('question_essay', array('question' => $questionid));
+                // Tipos adicionales de Moodle 3.9+
+                array('table' => 'question_gapselect', 'field' => 'questionid'),
+                array('table' => 'question_ddwtos', 'field' => 'questionid'),
+                array('table' => 'question_ddmarker', 'field' => 'questionid'),
+                array('table' => 'question_ddimageortext', 'field' => 'questionid'),
 
-            // 5. Delete the main question record
+                // Tablas qtype_* (Moodle 4.x)
+                array('table' => 'qtype_essay_options', 'field' => 'questionid'),
+                array('table' => 'qtype_match_options', 'field' => 'questionid'),
+                array('table' => 'qtype_match_subquestions', 'field' => 'questionid'),
+                array('table' => 'qtype_multichoice_options', 'field' => 'questionid'),
+                array('table' => 'qtype_shortanswer_options', 'field' => 'questionid'),
+
+                // Intentos y respuestas de usuarios
+                array('table' => 'question_attempt_steps', 'field' => 'questionattemptid'),
+                array('table' => 'question_attempt_step_data', 'field' => 'attemptstepid'),
+                array('table' => 'question_attempts', 'field' => 'questionid'),
+
+                // Banco de preguntas
+                array('table' => 'question_references', 'field' => 'questionbankentryid'),
+                array('table' => 'question_versions', 'field' => 'questionid'),
+                array('table' => 'question_set_references', 'field' => 'questionscontextid'),
+            );
+
+            // Delete from related tables
+            foreach ($tables_to_clean as $table_info) {
+                $table = $table_info['table'];
+                $field = $table_info['field'];
+
+                try {
+                    // Check if table exists before trying to delete
+                    if ($DB->get_manager()->table_exists($table)) {
+                        $DB->delete_records($table, array($field => $questionid));
+                    }
+                } catch (Exception $e) {
+                    // Log but continue - table might not exist or have different structure
+                    // No agregamos al array de errores para no saturar
+                }
+            }
+
+            // Delete the main question record
             $deleted_main = $DB->delete_records('question', array('id' => $questionid));
 
             if ($deleted_main) {
                 $deleted++;
+            } else {
+                $errors[] = "No se pudo eliminar pregunta ID $questionid";
             }
 
         } catch (Exception $e) {
@@ -108,11 +150,14 @@ try {
         $notify_type = \core\output\notification::NOTIFY_WARNING;
     }
 
-    if (!empty($errors)) {
+    if (!empty($errors) && count($errors) <= 5) {
+        // Solo mostrar errores si son pocos
         $message .= "\n\nErrores: " . implode(", ", $errors);
         if ($deleted == 0) {
             $notify_type = \core\output\notification::NOTIFY_ERROR;
         }
+    } elseif (!empty($errors) && count($errors) > 5) {
+        $message .= "\n\nSe encontraron " . count($errors) . " errores. Contacta al administrador para más detalles.";
     }
 
     redirect(new moodle_url('/admin/tool/questionsearch/index.php'),
