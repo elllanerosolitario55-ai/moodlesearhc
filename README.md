@@ -2,6 +2,16 @@
 
 Plugin para Moodle que permite a los administradores buscar y reemplazar palabras clave en preguntas de cuestionarios de forma masiva.
 
+## 🆕 Novedades v1.1.0 (20 Nov 2025)
+
+- 🔒 **Sistema de transacciones** con rollback automático para garantizar integridad de datos
+- ✨ **Mejor manejo de errores** con mensajes descriptivos y detallados
+- 🛡️ **Validación mejorada** de IDs de preguntas antes de eliminar
+- 🔧 **Eliminación de duplicados** en selecciones múltiples
+- 📄 **Títulos correctos** en todas las páginas del plugin
+
+👉 [Ver todas las novedades de v1.1.0](NOVEDADES-v1.1.0.md)
+
 ## 🎯 Características
 
 - ✅ Búsqueda de texto en preguntas, respuestas y retroalimentación
@@ -282,6 +292,7 @@ Si encuentras bugs o tienes sugerencias:
 
 ---
 
-**Versión**: 1.0.0
-**Última actualización**: Noviembre 2025
+**Versión**: 1.1.0
+**Última actualización**: 20 Noviembre 2025
 **Compatible con**: Moodle 3.9+
+**GitHub**: https://github.com/elllanerosolitario55-ai/moodlesearhc
