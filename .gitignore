@@ -1,0 +1,6 @@
+.same/
+*.zip
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

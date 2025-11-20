@@ -1,0 +1,50 @@
+
+                    ÍNDICE DE DOCUMENTACIÓN
+                   Plugin Question Search & Replace
+
+
+
+1. LEEME_PRIMERO.txt     - Empieza aquí (instrucciones básicas)
+2. QUICKSTART.md         - Guía rápida de instalación y uso
+3. INSTALL.md            - Instalación paso a paso detallada
+
+
+4. README.md             - Documentación completa del plugin
+                           • Características
+                           • Requisitos
+                           • Uso detallado
+                           • Ejemplos
+                           • Seguridad
+                           • Solución de problemas
+
+
+5. FAQ.md                - Preguntas frecuentes y respuestas
+6. ESTRUCTURA.md         - Documentación técnica del código
+7. CHANGELOG.md          - Historial de versiones y cambios
+
+
+8. sql_examples.sql      - Consultas SQL para uso directo en BD
+9. backup_script.sh      - Script automático de backup
+10. config_example.php   - Ejemplos de configuración
+
+
+ version.php            - Información y versión del plugin
+ settings.php           - Configuración del menú de administración
+ index.php              - Interfaz principal (formulario de búsqueda)
+ search.php             - Lógica de búsqueda y visualización
+ replace.php            - Lógica de reemplazo de texto
+ db/access.php          - Definición de permisos
+ lang/en/tool_questionsearch.php  - Strings en inglés
+ lang/es/tool_questionsearch.php  - Strings en español
+
+
+
+
+Para instalación:      → LEEME_PRIMERO.txt o INSTALL.md
+Para uso inmediato:    → QUICKSTART.md
+Para documentación:    → README.md
+Para problemas:        → FAQ.md
+Para SQL directo:      → sql_examples.sql
+Para backup:           → backup_script.sh
+
+

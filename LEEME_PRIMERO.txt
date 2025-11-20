@@ -1,0 +1,188 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║          PLUGIN DE BÚSQUEDA Y REEMPLAZO PARA MOODLE                      ║
+║                   Version 1.0.0 - Noviembre 2025                         ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+📋 ¿QUÉ ES ESTE PLUGIN?
+─────────────────────────────────────────────────────────────────────────
+
+Este plugin te permite como administrador de Moodle:
+
+  ✓ Buscar palabras o frases en preguntas de cuestionarios
+  ✓ Reemplazar texto de forma masiva en múltiples preguntas
+  ✓ Filtrar por curso específico
+  ✓ Buscar en texto de preguntas, respuestas y retroalimentación
+  ✓ Ver vista previa antes de aplicar cambios
+
+
+🚀 INSTALACIÓN RÁPIDA (3 PASOS)
+─────────────────────────────────────────────────────────────────────────
+
+1. COPIAR ARCHIVOS A MOODLE
+   Copia toda esta carpeta a:
+   /ruta/a/moodle/admin/tool/questionsearch/
+
+   Ejemplo en Linux:
+   sudo cp -r . /var/www/html/moodle/admin/tool/questionsearch/
+   sudo chown -R www-data:www-data /var/www/html/moodle/admin/tool/questionsearch/
+
+2. INSTALAR EN MOODLE
+   - Accede a Moodle como administrador
+   - Ve a: Administración del sitio → Notificaciones
+   - Haz clic en "Actualizar base de datos de Moodle"
+   - Sigue el asistente
+
+3. USAR EL PLUGIN
+   - Administración del sitio → Plugins → Herramientas de administración
+   - Click en "Question Search & Replace"
+   - ¡Listo para usar!
+
+
+⚠️  IMPORTANTE - LEER ANTES DE USAR
+─────────────────────────────────────────────────────────────────────────
+
+  ⚠️  SIEMPRE haz un BACKUP de la base de datos antes de reemplazar
+  ⚠️  Prueba primero en un curso de prueba
+  ⚠️  Revisa los resultados antes de reemplazar todo
+
+  Script de backup incluido:
+  chmod +x backup_script.sh
+  ./backup_script.sh
+
+
+📚 DOCUMENTACIÓN
+─────────────────────────────────────────────────────────────────────────
+
+Lee estos archivos en orden:
+
+  1. QUICKSTART.md       → Guía rápida de uso (¡empieza aquí!)
+  2. README.md           → Documentación completa
+  3. INSTALL.md          → Guía detallada de instalación
+  4. FAQ.md              → Preguntas frecuentes y soluciones
+  5. ESTRUCTURA.md       → Documentación técnica del código
+  6. sql_examples.sql    → Consultas SQL alternativas
+  7. CHANGELOG.md        → Historial de versiones
+
+
+🎯 EJEMPLO DE USO
+─────────────────────────────────────────────────────────────────────────
+
+Problema: Necesitas cambiar "2024" por "2025" en todas las preguntas
+          del curso "Matemáticas 101"
+
+Solución:
+  1. Abre el plugin
+  2. Término de búsqueda: "2024"
+  3. Reemplazar con: "2025"
+  4. Seleccionar curso: "Matemáticas 101"
+  5. Click "Buscar"
+  6. Revisa los resultados
+  7. Selecciona las preguntas a modificar
+  8. Click "Reemplazar Seleccionados"
+  9. ¡Listo!
+
+
+📁 ESTRUCTURA DE ARCHIVOS
+─────────────────────────────────────────────────────────────────────────
+
+  questionsearch/
+  ├── version.php              ← Información del plugin
+  ├── settings.php             ← Configuración del menú
+  ├── index.php                ← Página principal (búsqueda)
+  ├── search.php               ← Procesamiento de búsqueda
+  ├── replace.php              ← Procesamiento de reemplazo
+  ├── db/
+  │   └── access.php           ← Permisos
+  ├── lang/
+  │   ├── en/                  ← Strings en inglés
+  │   └── es/                  ← Strings en español
+  ├── README.md                ← Documentación principal
+  ├── INSTALL.md               ← Guía de instalación
+  ├── FAQ.md                   ← Preguntas frecuentes
+  ├── QUICKSTART.md            ← Guía rápida
+  ├── ESTRUCTURA.md            ← Documentación técnica
+  ├── CHANGELOG.md             ← Historial de versiones
+  ├── sql_examples.sql         ← Consultas SQL directas
+  ├── backup_script.sh         ← Script de backup
+  └── config_example.php       ← Ejemplos de configuración
+
+
+🛠️  REQUISITOS
+─────────────────────────────────────────────────────────────────────────
+
+  ✓ Moodle 3.9 o superior
+  ✓ PHP 7.3 o superior
+  ✓ Permisos de administrador
+  ✓ Acceso al servidor (para instalación)
+
+
+❓ PROBLEMAS COMUNES
+─────────────────────────────────────────────────────────────────────────
+
+  Problema: El plugin no aparece en el menú
+  Solución: Ve a Notificaciones y completa la instalación
+            Limpia cachés: Administración → Desarrollo → Purgar cachés
+
+  Problema: Error de permisos
+  Solución: sudo chown -R www-data:www-data admin/tool/questionsearch
+
+  Problema: No encuentra resultados
+  Solución: Desactiva "Coincidencia exacta" y "Case sensitive"
+            El texto puede tener HTML embebido
+
+  MÁS SOLUCIONES: Ver FAQ.md
+
+
+🔐 SEGURIDAD
+─────────────────────────────────────────────────────────────────────────
+
+  ✓ Solo administradores tienen acceso por defecto
+  ✓ Protección CSRF con tokens de sesión
+  ✓ Transacciones seguras con rollback automático
+  ✓ Uso de API oficial de Moodle
+  ✓ Limpieza automática de cachés
+
+
+💡 CONSEJOS
+─────────────────────────────────────────────────────────────────────────
+
+  1. Haz backup ANTES de cualquier reemplazo masivo
+  2. Empieza buscando sin reemplazar (deja campo vacío)
+  3. Prueba con un solo curso primero
+  4. Verifica manualmente algunas preguntas después del cambio
+  5. Ten en cuenta que HTML puede afectar la búsqueda
+  6. Usa el script SQL directo para bases de datos muy grandes
+
+
+📞 SOPORTE
+─────────────────────────────────────────────────────────────────────────
+
+  • Documentación completa en README.md
+  • Preguntas frecuentes en FAQ.md
+  • Ejemplos SQL en sql_examples.sql
+  • Contacta a tu administrador de Moodle
+  • Reporta bugs en el repositorio del proyecto
+
+
+📄 LICENCIA
+─────────────────────────────────────────────────────────────────────────
+
+  GPL v3 - Software libre y gratuito
+  Puedes usarlo, modificarlo y redistribuirlo
+
+
+═══════════════════════════════════════════════════════════════════════════
+
+  ¿Listo para empezar?
+
+  → Lee QUICKSTART.md para una guía paso a paso
+  → O ve directamente a instalarlo siguiendo los 3 pasos arriba
+
+  ¡Buena suerte con tu búsqueda y reemplazo! 🎉
+
+═══════════════════════════════════════════════════════════════════════════
+
+Desarrollado con ❤️ para facilitar la administración de Moodle
+Versión 1.0.0 - Noviembre 2025

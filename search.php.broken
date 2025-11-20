@@ -1,0 +1,397 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+
+require_once(__DIR__ . '/../../../config.php');
+require_once($CFG->libdir.'/adminlib.php');
+
+admin_externalpage_setup('tool_questionsearch');
+
+require_capability('tool/questionsearch:use', context_system::instance());
+require_login();
+
+$PAGE->set_url(new moodle_url('/admin/tool/questionsearch/search.php'));
+$PAGE->set_title(get_string('results', 'tool_questionsearch'));
+$PAGE->set_heading(get_string('results', 'tool_questionsearch'));
+
+// Get search parameters  
+$searchterm = required_param('searchterm', PARAM_RAW);
+$replaceterm = optional_param('replaceterm', '', PARAM_RAW);
+$courseid = optional_param('courseid', 0, PARAM_INT);
+$search_questiontext = optional_param('search_questiontext', 0, PARAM_INT);
+$search_feedback = optional_param('search_feedback', 0, PARAM_INT);
+$search_answers = optional_param('search_answers', 0, PARAM_INT);
+$casesensitive = optional_param('casesensitive', 0, PARAM_INT);
+$exactmatch = optional_param('exactmatch', 0, PARAM_INT);
+
+if (empty($searchterm)) {
+    redirect(new moodle_url('/admin/tool/questionsearch/index.php'),
+             get_string('emptysearch', 'tool_questionsearch'),
+             null,
+             \core\output\notification::NOTIFY_ERROR);
+}
+
+// Build search results
+$results = array();
+
+// Prepare LIKE pattern
+if ($exactmatch) {
+    $likepattern = $casesensitive ? $searchterm : $searchterm;
+} else {
+    $likepattern = $casesensitive ? "%{$searchterm}%" : "%{$searchterm}%";
+}
+
+// Helper function to get course name from question
+function get_course_from_question($questionid) {
+    global $DB;
+    $question = $DB->get_record('question', array('id' => $questionid), 'category');
+    if (!$question || !$question->category) {
+        return 'N/A';
+    }
+    
+    $qcat = $DB->get_record('question_categories', array('id' => $question->category), 'name, contextid');
+    if (!$qcat) {
+        return 'N/A';
+    }
+    
+    $ctx = $DB->get_record('context', array('id' => $qcat->contextid), 'instanceid, contextlevel');
+    if ($ctx && $ctx->contextlevel == 50) {
+        $course = $DB->get_record('course', array('id' => $ctx->instanceid), 'fullname');
+        if ($course) {
+            return $course->fullname;
+        }
+    }
+    
+    return $qcat->name . ' (Categoría)';
+}
+
+// Search in question text
+if ($search_questiontext) {
+    $sql = "SELECT id, name, questiontext, qtype, category
+            FROM {question}
+            WHERE questiontext LIKE ?";
+    $params = array($likepattern);
+    
+    $questions = $DB->get_records_sql($sql, $params);
+    
+    foreach ($questions as $q) {
+        $coursename = get_course_from_question($q->id);
+        
+        // Filter by course if specified
+        if ($courseid > 0) {
+            $qcat = $DB->get_record('question_categories', array('id' => $q->category), 'contextid');
+            if ($qcat) {
+                $ctx = $DB->get_record('context', array('id' => $qcat->contextid), 'instanceid, contextlevel');
+                if (!$ctx || $ctx->contextlevel != 50 || $ctx->instanceid != $courseid) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+        
+        $results[] = array(
+            'questionid' => $q->id,
+            'questionname' => $q->name,
+            'questiontype' => $q->qtype,
+            'courseid' => 0,
+            'coursename' => $coursename,
+            'quizid' => 0,
+            'quizname' => 'No asignado',
+            'location' => 'questiontext',
+            'content' => $q->questiontext,
+            'field' => 'questiontext'
+        );
+    }
+}
+
+// Search in general feedback
+if ($search_feedback) {
+    $sql = "SELECT id, name, generalfeedback, qtype, category
+            FROM {question}
+            WHERE generalfeedback LIKE ?
+            AND generalfeedback != ''";
+    $params = array($likepattern);
+    
+    $questions = $DB->get_records_sql($sql, $params);
+    
+    foreach ($questions as $q) {
+        $coursename = get_course_from_question($q->id);
+        
+        // Filter by course if specified
+        if ($courseid > 0) {
+            $qcat = $DB->get_record('question_categories', array('id' => $q->category), 'contextid');
+            if ($qcat) {
+                $ctx = $DB->get_record('context', array('id' => $qcat->contextid), 'instanceid, contextlevel');
+                if (!$ctx || $ctx->contextlevel != 50 || $ctx->instanceid != $courseid) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+        
+        $results[] = array(
+            'questionid' => $q->id,
+            'questionname' => $q->name,
+            'questiontype' => $q->qtype,
+            'courseid' => 0,
+            'coursename' => $coursename,
+            'quizid' => 0,
+            'quizname' => 'No asignado',
+            'location' => 'generalfeedback',
+            'content' => $q->generalfeedback,
+            'field' => 'generalfeedback'
+        );
+    }
+}
+
+// Search in answers
+if ($search_answers) {
+    $sql = "SELECT qa.id, qa.answer, qa.question as questionid
+            FROM {question_answers} qa
+            WHERE qa.answer LIKE ?";
+    $params = array($likepattern);
+    
+    $answers = $DB->get_records_sql($sql, $params);
+    
+    foreach ($answers as $a) {
+        $question = $DB->get_record('question', array('id' => $a->questionid), 'name, qtype, category');
+        if (!$question) {
+            continue;
+        }
+        
+        $coursename = get_course_from_question($a->questionid);
+        
+        // Filter by course if specified
+        if ($courseid > 0) {
+            $qcat = $DB->get_record('question_categories', array('id' => $question->category), 'contextid');
+            if ($qcat) {
+                $ctx = $DB->get_record('context', array('id' => $qcat->contextid), 'instanceid, contextlevel');
+                if (!$ctx || $ctx->contextlevel != 50 || $ctx->instanceid != $courseid) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+        
+        $results[] = array(
+            'questionid' => $a->questionid,
+            'questionname' => $question->name,
+            'questiontype' => $question->qtype,
+            'courseid' => 0,
+            'coursename' => $coursename,
+            'quizid' => 0,
+            'quizname' => 'No asignado',
+            'location' => 'answer',
+            'content' => $a->answer,
+            'field' => 'answer',
+            'answerid' => $a->id
+        );
+    }
+}
+
+echo $OUTPUT->header();
+echo $OUTPUT->heading(get_string('results', 'tool_questionsearch'));
+
+?>
+
+<style>
+.search-summary {
+    background: #e3f2fd;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #0f6cbf;
+}
+.search-summary h3 {
+    margin: 0 0 10px 0;
+    color: #0f6cbf;
+}
+.search-summary p {
+    margin: 5px 0;
+}
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.results-table th {
+    background: #0f6cbf;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+}
+.results-table td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+.results-table tr:hover {
+    background: #f5f5f5;
+}
+.preview-text {
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.highlight {
+    background: yellow;
+    font-weight: bold;
+}
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-primary {
+    background: #0f6cbf;
+    color: white;
+}
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+.btn:hover {
+    opacity: 0.8;
+}
+.back-link {
+    display: inline-block;
+    margin-top: 20px;
+    color: #0f6cbf;
+    text-decoration: none;
+}
+.back-link:hover {
+    text-decoration: underline;
+}
+</style>
+
+<div class="search-summary">
+    <h3><?php echo get_string('found', 'tool_questionsearch', count($results)); ?></h3>
+    <p><strong><?php echo get_string('searchterm', 'tool_questionsearch'); ?>:</strong> "<?php echo s($searchterm); ?>"</p>
+    <?php if ($replaceterm): ?>
+        <p><strong><?php echo get_string('replaceterm', 'tool_questionsearch'); ?>:</strong> "<?php echo s($replaceterm); ?>"</p>
+    <?php endif; ?>
+    <?php if ($courseid > 0): ?>
+        <p><strong><?php echo get_string('course', 'tool_questionsearch'); ?>:</strong> 
+           <?php echo s($DB->get_field('course', 'fullname', array('id' => $courseid))); ?></p>
+    <?php endif; ?>
+</div>
+
+<?php if (empty($results)): ?>
+    <div class="alert alert-info">
+        <?php echo get_string('noresults', 'tool_questionsearch'); ?>
+    </div>
+<?php else: ?>
+    <form action="replace.php" method="post" id="replace-form">
+        <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
+        <input type="hidden" name="searchterm" value="<?php echo s($searchterm); ?>">
+        <input type="hidden" name="replaceterm" value="<?php echo s($replaceterm); ?>">
+        <input type="hidden" name="casesensitive" value="<?php echo $casesensitive; ?>">
+        
+        <?php if (!empty($replaceterm)): ?>
+        <div class="action-buttons">
+            <button type="button" class="btn btn-secondary" onclick="selectAll()">
+                <?php echo get_string('selectall', 'tool_questionsearch'); ?>
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="deselectAll()">
+                <?php echo get_string('deselectall', 'tool_questionsearch'); ?>
+            </button>
+            <button type="submit" class="btn btn-primary" onclick="return confirmReplace()">
+                <?php echo get_string('replaceselected', 'tool_questionsearch'); ?>
+            </button>
+        </div>
+        <?php endif; ?>
+        
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <?php if (!empty($replaceterm)): ?>
+                        <th width="40"><input type="checkbox" id="select-all"></th>
+                    <?php endif; ?>
+                    <th><?php echo get_string('course', 'tool_questionsearch'); ?></th>
+                    <th><?php echo get_string('quiz', 'tool_questionsearch'); ?></th>
+                    <th><?php echo get_string('question', 'tool_questionsearch'); ?></th>
+                    <th><?php echo get_string('questiontype', 'tool_questionsearch'); ?></th>
+                    <th><?php echo get_string('location', 'tool_questionsearch'); ?></th>
+                    <th><?php echo get_string('preview', 'tool_questionsearch'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($results as $index => $result): ?>
+                <tr>
+                    <?php if (!empty($replaceterm)): ?>
+                        <td>
+                            <input type="checkbox" name="selected[]" 
+                                   value="<?php echo htmlspecialchars(json_encode($result)); ?>"
+                                   class="result-checkbox">
+                        </td>
+                    <?php endif; ?>
+                    <td><?php echo s($result['coursename']); ?></td>
+                    <td><?php echo s($result['quizname']); ?></td>
+                    <td><?php echo s($result['questionname']); ?></td>
+                    <td><?php echo s($result['questiontype']); ?></td>
+                    <td><?php echo s($result['location']); ?></td>
+                    <td class="preview-text">
+                        <?php 
+                        $content = strip_tags($result['content']);
+                        $pattern = $casesensitive ? "/".preg_quote($searchterm, '/')."/" : "/".preg_quote($searchterm, '/')."/i";
+                        $highlighted = preg_replace($pattern, '<span class="highlight">$0</span>', htmlspecialchars($content));
+                        echo substr($highlighted, 0, 200) . (strlen($content) > 200 ? '...' : '');
+                        ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </form>
+<?php endif; ?>
+
+<a href="index.php" class="back-link">← <?php echo get_string('searchpage', 'tool_questionsearch'); ?></a>
+
+<script>
+function selectAll() {
+    document.querySelectorAll('.result-checkbox').forEach(cb => cb.checked = true);
+    if (document.getElementById('select-all')) {
+        document.getElementById('select-all').checked = true;
+    }
+}
+
+function deselectAll() {
+    document.querySelectorAll('.result-checkbox').forEach(cb => cb.checked = false);
+    if (document.getElementById('select-all')) {
+        document.getElementById('select-all').checked = false;
+    }
+}
+
+if (document.getElementById('select-all')) {
+    document.getElementById('select-all').addEventListener('change', function() {
+        if (this.checked) {
+            selectAll();
+        } else {
+            deselectAll();
+        }
+    });
+}
+
+function confirmReplace() {
+    const checked = document.querySelectorAll('.result-checkbox:checked').length;
+    if (checked === 0) {
+        alert('<?php echo get_string('noresults', 'tool_questionsearch'); ?>');
+        return false;
+    }
+    return confirm('<?php echo addslashes(get_string('confirmreplace', 'tool_questionsearch', '')); ?>'.replace('{}', checked));
+}
+</script>
+
+<?php
+echo $OUTPUT->footer();
