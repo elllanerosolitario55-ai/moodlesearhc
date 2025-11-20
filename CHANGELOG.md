@@ -5,6 +5,30 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.1] - 2025-11-20
+
+### Crítico - Mejora en Eliminación
+- 🔧 **Ahora limpia ~25 tablas relacionadas** (antes solo ~10)
+- ✅ **Soporte completo para Moodle 3.9+ y 4.x**
+- 🛡️ **Verificación de existencia de tablas** antes de intentar eliminar
+- 🧹 **Limpieza de intentos de usuarios** (question_attempts, question_attempt_steps)
+- 📦 **Limpieza de banco de preguntas** (question_versions, question_references)
+
+### Nuevas Herramientas
+- 🔍 **delete-diagnostico.php**: Script para diagnosticar problemas de eliminación
+- 📖 **SOLUCION-ERRORES-ELIMINACION.md**: Guía completa de troubleshooting
+
+### Tablas Adicionales Incluidas
+- question_gapselect, question_ddwtos, question_ddmarker, question_ddimageortext
+- qtype_*_options (para Moodle 4.x)
+- question_attempts, question_attempt_steps, question_attempt_step_data
+- question_references, question_versions, question_set_references
+
+### Corregido
+- 🐛 **"Error escribiendo a la base de datos"** al eliminar preguntas
+- 🐛 Fallos por tablas que no existen en versiones antiguas de Moodle
+- 🐛 Fallos por foreign keys en tablas de intentos de usuarios
+
 ## [1.1.0] - 2025-11-20
 
 ### Mejorado
